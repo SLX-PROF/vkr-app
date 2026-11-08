@@ -2,6 +2,7 @@
 {% block title %}Проверка документа{% endblock %}
 {% block content %}
 <h1 class="h3 mb-4">Проверка первичного документа</h1>
+<a class="btn btn-outline-primary mb-3" href="{% url 'documents:upload' %}">Загрузить PDF или скан</a>
 <p class="text-muted">Система сверяет введённые реквизиты. Подлинность подписи, доверенности и содержание хозяйственной операции проверяет сотрудник.</p>
 <form method="post" class="card card-body">
   {% csrf_token %}

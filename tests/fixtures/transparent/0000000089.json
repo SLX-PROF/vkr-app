@@ -6,5 +6,8 @@
   "taxes_paid": 90000,
   "tax_regime": "УСН",
   "has_tax_debt": true,
-  "tax_debt_amount": 480000
+  "tax_debt_amount": 480000,
+  "unreliable_details": false,
+  "unreliable_address": false,
+  "unreliable_director": false
 }

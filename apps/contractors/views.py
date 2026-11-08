@@ -11,6 +11,7 @@ from apps.core.ratelimit import rate_limit
 from apps.core.roles import ALL_ROLES, can_see_details, role_required
 from apps.core.validators import is_valid_inn, is_valid_ogrn
 from apps.documents.models import DocumentVerification
+from apps.reports.observations import source_evidence, source_observations
 from apps.scrapers.egrul import EgrulSource
 from apps.scrapers.sources import ALL_SOURCES
 
@@ -83,6 +84,8 @@ def contractor_card(request, pk):
         "missing_sources": [s.source_name for s in latest.sources.all()
                             if s.status != "success" or s.data.get("unavailable_fields")] if latest else [],
         "factors": factors,
+        "observations": source_observations(list(latest.sources.all())) if latest and details else [],
+        "evidence": source_evidence(list(latest.sources.all())) if latest and details else [],
         "source_statuses": [{"name": s.source_name, "status": s.get_status_display(),
                              "mode": s.mode, "partial": bool(s.data.get("unavailable_fields")),
                              "error": s.error, "url": SOURCE_URLS.get(s.source_name, "")}

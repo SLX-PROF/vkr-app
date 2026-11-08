@@ -11,7 +11,7 @@ INN = "0000000018"
 
 
 def payload():
-    return {"vyp": {"ИНН": INN, "sschr": 4, "sschr_yearcode": 2025,
+    return {"vyp": {"ИНН": INN, "invalid": 0, "sschr": 4, "sschr_yearcode": 2025,
                     "revenuesum": 100000, "form1_yearcode": 2025, "masruk": [{"cnt": "1"}]},
             "masaddress": [{"cnt": "2"}],
             "arrear": [{"yearcode": 2026, "periodcode": 9, "arrearsum": 0},

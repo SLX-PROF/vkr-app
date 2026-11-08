@@ -22,6 +22,10 @@ SCORING_CONFIG = {
     "lost_large": 25,         # КАД: проиграны дела на крупную сумму
     "tiny_headcount": 15,     # ПБ: численность < 2 при наличии выручки (признак «технической» компании)
     "tax_debt": 15,           # ПБ: есть недоимка по налогам (правило 7 ТЗ v1.2)
+    "unreliable_address": 30,  # дополнительные экспертные правила; требуют проверки на выборке
+    "unreliable_director": 40,
+    "unreliable_details": 30,  # общий флаг, только если конкретные признаки не установлены
+    "cbr_warning": 70,         # точное совпадение ИНН в открытом перечне ЦБ
     # --- пороги правил ---
     "mass_director_over": 5,       # фирм у одного руководителя: строго больше
     "mass_address_over": 10,       # фирм по одному адресу: строго больше
@@ -39,6 +43,7 @@ SCORING_CONFIG = {
 SOURCE_NAMES = {
     "EGRUL": "ЕГРЮЛ", "TRANSPARENT": "Прозрачный бизнес", "DISQUALIFIED": "Дисквалифицированные лица",
     "FSSP": "ФССП", "EFRSB": "ЕФРСБ", "KAD": "КАД Арбитр",
+    "CBR": "ЦБ: нелегальная деятельность",
 }
 
 
@@ -110,6 +115,14 @@ def calculate_risk_score(sources: dict, config: dict | None = None) -> ScoreResu
         hit("disqualified", "Руководитель найден в реестре дисквалифицированных лиц", "DISQUALIFIED")
 
     if pb:
+        if pb.get("unreliable_address") is True:
+            hit("unreliable_address", "ФНС: недостоверность сведений об адресе", "TRANSPARENT")
+        if pb.get("unreliable_director") is True:
+            hit("unreliable_director", "ФНС: недостоверность сведений о руководителе", "TRANSPARENT")
+        if (pb.get("unreliable_details") is True and not pb.get("unreliable_address")
+                and not pb.get("unreliable_director")):
+            hit("unreliable_details", "ФНС: запись о недостоверности сведений без установленной детализации",
+                "TRANSPARENT")
         if (pb.get("director_companies_count") or 0) > cfg["mass_director_over"]:
             hit("mass_director", f"Массовый руководитель: {pb['director_companies_count']} организаций", "TRANSPARENT")
         if (pb.get("address_companies_count") or 0) > cfg["mass_address_over"]:
@@ -124,19 +137,28 @@ def calculate_risk_score(sources: dict, config: dict | None = None) -> ScoreResu
             hit("tax_debt", f"Есть недоимка по налогам{amount}", "TRANSPARENT")
 
     if fssp:
-        debt = fssp.get("total_debt", 0)
+        debt = fssp.get("total_debt") or fssp.get("confirmed_debt_lower_bound") or 0
+        debt_label = ("Подтверждённая задолженность по исполнительным производствам не менее"
+                      if fssp.get("total_debt") is None else "Задолженность по исполнительным производствам")
         if debt > cfg["debt_large_over"]:
-            hit("debt_large", f"Задолженность по исполнительным производствам {debt:,} руб.".replace(",", " "), "FSSP")
+            hit("debt_large", f"{debt_label} {debt:,} руб.".replace(",", " "), "FSSP")
         elif debt > 0:
-            hit("debt_small", f"Задолженность по исполнительным производствам {debt:,} руб.".replace(",", " "), "FSSP")
-        if fssp.get("active_proceedings", 0) > cfg["proceedings_over"]:
+            hit("debt_small", f"{debt_label} {debt:,} руб.".replace(",", " "), "FSSP")
+        if (fssp.get("active_proceedings") or 0) > cfg["proceedings_over"]:
             hit("many_proceedings", f"Активных исполнительных производств: {fssp['active_proceedings']}", "FSSP")
 
     if kad:
-        if kad.get("cases_last_year", 0) > cfg["cases_over"]:
-            hit("many_cases", f"Арбитражных дел за последний год: {kad['cases_last_year']}", "KAD")
-        if kad.get("lost_cases_amount", 0) > cfg["lost_amount_over"]:
+        case_count = kad.get("cases_last_year")
+        lower_bound = case_count is None
+        case_count = case_count if case_count is not None else kad.get("confirmed_cases_lower_bound", 0)
+        if case_count > cfg["cases_over"]:
+            prefix = "не менее " if lower_bound else ""
+            hit("many_cases", f"Арбитражных дел за последний год: {prefix}{case_count}", "KAD")
+        if (kad.get("lost_cases_amount") or 0) > cfg["lost_amount_over"]:
             hit("lost_large", f"Проиграны дела на сумму {kad['lost_cases_amount']:,} руб.".replace(",", " "), "KAD")
+
+    if (sources.get("CBR") or {}).get("found_by_inn") is True:
+        hit("cbr_warning", "ИНН найден в перечне ЦБ с признаками нелегальной финансовой деятельности", "CBR")
 
     score = min(sum(f.points for f in factors), cfg["score_max"])
     missing = [name for key, name in SOURCE_NAMES.items() if not sources.get(key)]

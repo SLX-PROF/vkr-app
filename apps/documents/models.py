@@ -1,3 +1,6 @@
+import uuid
+
+from django.conf import settings
 from django.db import models
 
 from apps.contractors.models import Contractor
@@ -23,6 +26,7 @@ class PrimaryDocument(models.Model):
     signer_position = models.CharField("Должность подписанта", max_length=200, blank=True)
     amount = models.DecimalField("Сумма, руб.", max_digits=15, decimal_places=2, null=True, blank=True)
     file = models.FileField("Скан/PDF", upload_to="documents/", blank=True)
+    processing = models.JSONField("Основание извлечения реквизитов", default=dict, blank=True)
     created_at = models.DateTimeField("Внесён", auto_now_add=True)
 
     class Meta:
@@ -66,3 +70,15 @@ class DocumentVerification(models.Model):
 
     def __str__(self):
         return f"Сверка: {self.document}"
+
+
+class DocumentUpload(models.Model):
+    """Временная загрузка до подтверждения реквизитов пользователем."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    file = models.FileField(upload_to="document_uploads/%Y/%m/")
+    original_name = models.CharField(max_length=200)
+    sha256 = models.CharField(max_length=64)
+    extraction = models.JSONField(default=dict)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    document = models.OneToOneField(PrimaryDocument, null=True, blank=True, on_delete=models.PROTECT)

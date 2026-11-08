@@ -41,14 +41,29 @@ services:
       SOURCE_MODE_FSSP: web
       SOURCE_MODE_EFRSB: web
       SOURCE_MODE_KAD: web
+      SOURCE_MODE_CBR: web
+      OFDATA_API_KEY: ${OFDATA_API_KEY:-}
+      OFDATA_DAILY_LIMIT: ${OFDATA_DAILY_LIMIT:-90}
+      SIGNATURE_TRUST_BUNDLE: ${SIGNATURE_TRUST_BUNDLE:-}
     volumes:
       - logs:/app/logs
       - media:/app/media
+      - ./trust:/app/trust:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; r=urllib.request.Request('http://127.0.0.1:8000/health/', headers={'X-Forwarded-Proto':'https'}); urllib.request.urlopen(r,timeout=3)"]
       interval: 30s
       timeout: 5s
       retries: 3
+  trust-refresh:
+    image: vkr-web
+    restart: unless-stopped
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      DJANGO_SECRET_KEY: trust-updater-no-user-sessions
+      SIGNATURE_TRUST_BUNDLE: /app/trust/government.pem
+    volumes:
+      - ./trust:/app/trust
+    command: ["sh", "-c", "while true; do python manage.py refresh_signature_trust; sleep 21600; done"]
   backup:
     image: postgres:16
     restart: unless-stopped
@@ -63,6 +78,7 @@ services:
       PGPASSWORD: ${POSTGRES_ADMIN_PASSWORD:?}
     volumes:
       - ./backups:/backups
+      - media:/media:ro
       - ./deploy/backup-loop.sh:/backup-loop.sh:ro
     entrypoint: ["sh", "/backup-loop.sh"]
 volumes:

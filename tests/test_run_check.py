@@ -22,7 +22,7 @@ def test_demo_contractor_expected_status(item):
     assert session.status == item["expected_status"]
     assert session.score == EXPECTED_SCORE[item["inn"]]
     assert not session.is_partial
-    assert session.sources.count() == 6
+    assert session.sources.count() == 7
 
 
 def test_run_check_saves_contractor_and_factors(django_user_model):
@@ -57,7 +57,7 @@ def test_one_failed_source_does_not_break_check(monkeypatch):
     assert session.is_partial and session.score == 0 and session.status == "unknown"
     failed = session.sources.get(source_name="ФССП")
     assert failed.status == "error" and failed.data == {}
-    assert session.sources.filter(status="success").count() == 5
+    assert session.sources.filter(status="success").count() == 6
 
 
 def test_egrul_failure_keeps_existing_contractor_data(monkeypatch):

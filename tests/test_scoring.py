@@ -10,6 +10,7 @@ CLEAN = {
     "FSSP": {"active_proceedings": 0, "total_debt": 0},
     "EFRSB": {"bankruptcy": False},
     "KAD": {"cases_last_year": 1, "lost_cases_amount": 0},
+    "CBR": {"found_by_inn": False},
 }
 
 
@@ -147,7 +148,7 @@ def test_absent_key_counts_as_missing():
 
 def test_all_sources_missing_is_unknown():
     result = calculate_risk_score({})
-    assert result.score == 0 and len(result.missing) == 6 and result.partial
+    assert result.score == 0 and len(result.missing) == 7 and result.partial
     assert result.status == "unknown"
 
 

@@ -50,6 +50,7 @@ def normalize_company(payload, inn):
               "address": data.get("АдресРФ") or data.get("Адрес") or "",
               "okved_main": data.get("КодОКВЭД") or "",
               "registry_snapshot_date": data.get("ДатаВып")}
+    result.update(normalize_unreliability(data))
     registered = data.get("ДатаРег")
     if registered:
         try:
@@ -58,12 +59,34 @@ def normalize_company(payload, inn):
         except (ValueError, AttributeError):
             result["registration_date"] = None
     result["unavailable_fields"] = [k for k in ("avg_headcount", "revenue", "tax_debt_amount",
-                                                "director_companies_count", "address_companies_count")
+                                                "director_companies_count", "address_companies_count",
+                                                "unreliable_details", "unreliable_address", "unreliable_director")
                                       if result[k] is None]
     return result
 
 
+def normalize_unreliability(data):
+    """Признаки по полям официальной карточки ФНС; массовость не означает недостоверность."""
+    value = number(data.get("invalid"))
+    general = bool(value) if value in (0, 1) else None
+    addresses = data.get("НедСвАдресЮЛ")
+    address_notes = [str(row["ТекстНедАдресЮЛ"]).strip() for row in addresses or []
+                     if isinstance(row, dict) and row.get("ТекстНедАдресЮЛ")]
+    directors = data.get("masruk")
+    director_notes = [str(row["invalid"]).strip() for row in directors or []
+                      if isinstance(row, dict) and row.get("invalid")]
+    # Если общий флаг положительный, отсутствие детализации не доказывает достоверность конкретного поля.
+    address = True if address_notes else False if general is False or addresses == [] else None
+    director = True if director_notes else False if general is False else None
+    if address_notes or director_notes:
+        general = True
+    return {"unreliable_details": general, "unreliable_address": address,
+            "unreliable_director": director, "unreliable_address_notes": address_notes,
+            "unreliable_director_notes": director_notes}
+
+
 class TransparentBusinessSource(BaseSource):
+    cache_version = 2
     name = "Прозрачный бизнес"
     key = "TRANSPARENT"
     domain = "pb.nalog.ru"

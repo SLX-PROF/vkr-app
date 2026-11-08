@@ -156,6 +156,36 @@ def verify_document(doc: PrimaryDocument) -> DocumentVerification:
         issues.append(issue("REGISTRATION_DATE_UNKNOWN", "Дата создания организации не установлена: "
                             "хронологическую проверку выполнить нельзя", WARNING))
 
+    signature_history = doc.processing.get("signature_checks", [])
+    if signature_history:
+        results = signature_history[-1].get("results", [])
+        identities = [identity for result in results if result.get("integrity") == "valid"
+                      for identity in result.get("identities", [])]
+        names = [identity["name"] for identity in identities if identity.get("name")]
+        if names and doc.signer_name.strip():
+            matches = [compare_names(doc.signer_name, name) for name in names]
+            if "exact" not in matches and "typo" not in matches:
+                issues.append(issue("CERTIFICATE_SIGNER_MISMATCH", "ФИО в сертификате электронной подписи "
+                                    "не совпадает с указанным подписантом документа", ERROR))
+            elif "exact" not in matches:
+                issues.append(issue("CERTIFICATE_SIGNER_TYPO", "ФИО в сертификате и реквизитах совпадают "
+                                    "неточно: проверьте написание", WARNING))
+        elif identities:
+            issues.append(issue("CERTIFICATE_PERSON_UNKNOWN", "В сертификате нет полного ФИО физического "
+                                "лица для автоматической сверки подписанта", WARNING))
+        organization_inns = [i["organization_inn"] for i in identities if i.get("organization_inn")]
+        if organization_inns and doc.inn not in organization_inns:
+            issues.append(issue("CERTIFICATE_ORGANIZATION_MISMATCH", "ИНН организации в сертификате "
+                                "не совпадает с ИНН контрагента документа: требуется основание полномочий", WARNING))
+        if any(r.get("integrity") == "invalid" or r.get("trust") == "failed"
+               or r.get("revocation") == "revoked" for r in results):
+            issues.append(issue("SIGNATURE_INVALID", "Проверка электронной подписи не пройдена", ERROR))
+        elif (not results or any(r.get("integrity") != "valid" or r.get("trust") != "verified"
+                                 or r.get("revocation") != "verified" or r.get("covers_current_file") is False
+                                 for r in results)):
+            issues.append(issue("SIGNATURE_UNCONFIRMED", "Электронная подпись проверена не полностью: "
+                                "изучите результат проверки сертификата и содержимого", WARNING))
+
     verification, _ = DocumentVerification.objects.update_or_create(
         document=doc,
         defaults={"contractor": contractor, "name_match": name_match,

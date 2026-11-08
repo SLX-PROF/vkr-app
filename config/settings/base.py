@@ -90,7 +90,7 @@ LOGOUT_REDIRECT_URL = "/login/"
 # Режим каждого источника: mock | api | web (по умолчанию mock)
 SOURCE_MODES = {
     name: os.environ.get(f"SOURCE_MODE_{name}", "mock")
-    for name in ("EGRUL", "TRANSPARENT", "DISQUALIFIED", "FSSP", "EFRSB", "KAD")
+    for name in ("EGRUL", "TRANSPARENT", "DISQUALIFIED", "FSSP", "EFRSB", "KAD", "CBR")
 }
 
 # Логирование обращений к источникам и работы приложения
@@ -125,3 +125,8 @@ SOURCE_USER_AGENT = os.environ.get(
     "SOURCE_USER_AGENT", "ValdexCheck/1.0 (academic research project)"
 )
 EGRUL_API_KEY = os.environ.get("EGRUL_API_KEY", "")  # DaData; без ключа режим api недоступен
+OFDATA_API_KEY = os.environ.get("OFDATA_API_KEY", "")
+OFDATA_DAILY_LIMIT = min(100, max(1, int(os.environ.get("OFDATA_DAILY_LIMIT", "90"))))
+SIGNATURE_OPENSSL = os.environ.get("SIGNATURE_OPENSSL", "openssl")
+SIGNATURE_OPENSSL_ENGINE = os.environ.get("SIGNATURE_OPENSSL_ENGINE", "")
+SIGNATURE_TRUST_BUNDLE = os.environ.get("SIGNATURE_TRUST_BUNDLE", "")

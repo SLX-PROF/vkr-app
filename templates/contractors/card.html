@@ -47,7 +47,7 @@
     {% if latest %}
       <div class="card mb-3"><div class="card-body">
         <div class="d-flex flex-wrap gap-4 align-items-center">
-          <div><div class="text-muted small">Итоговый балл</div><div class="display-6">{{ latest.score }}<span class="fs-6 text-muted"> / 100</span></div></div>
+          <div><div class="text-muted small">Индекс риска системы</div><div class="display-6">{{ latest.score }}<span class="fs-6 text-muted"> / 100</span></div></div>
           <div><div class="text-muted small">Статус</div>{{ latest.status|status_badge }}</div>
           <div><div class="text-muted small">Проверка от</div>{{ latest.started_at|date:"d.m.Y H:i" }}</div>
         </div>
@@ -77,6 +77,30 @@
         </table></div>
         <p class="small text-muted mt-2 mb-0">Ссылка открывает первоисточник для ручной проверки. Отсутствие ответа не подтверждает отсутствие риска.</p>
       </div></div>
+      {% if can_see_details %}
+      <div class="card mb-3"><div class="card-body">
+        <h2 class="h6">Результаты по источникам</h2>
+        <dl class="mb-3">{% for row in observations %}
+          <dt><a href="{{ row.url }}" target="_blank" rel="noopener noreferrer">{{ row.title }}</a></dt>
+          <dd>{{ row.text }}{% if row.details %}<div class="small text-muted">{{ row.details }}</div>{% endif %}</dd>
+        {% endfor %}</dl>
+        {% for block in evidence %}
+        <details class="mb-3"><summary>{{ block.title }}: записи ({{ block.total }})</summary>
+          <p class="small text-muted mt-2">Показано {{ block.rows|length }} из {{ block.total }} записей сохранённого ответа.</p>
+          <ul class="list-group list-group-flush">{% for row in block.rows %}
+            <li class="list-group-item px-0">
+              <strong>{% if row.url %}<a href="{{ row.url }}" target="_blank" rel="noopener noreferrer">{{ row.title }}</a>{% else %}{{ row.title }}{% endif %}</strong>
+              <div class="small">{{ row.text }}</div>
+            </li>
+          {% endfor %}</ul>
+        </details>
+        {% endfor %}
+        <p class="mb-1"><strong>ЗСК:</strong> категория не установлена.</p>
+        <p class="small text-muted">Индекс риска системы рассчитывается по собственным правилам. Публичная проверка ЗСК сообщает только об отнесении к высокому риску; отрицательный результат не различает зелёную и жёлтую зоны.</p>
+        <a href="https://www.cbr.ru/counteraction_m_ter/platform_zsk/proverka-po-inn/" target="_blank" rel="noopener noreferrer">Проверить высокий риск ЗСК на сайте ЦБ</a>
+        <p class="small text-muted mt-2 mb-0">Банковские отказы по спискам 764/639/550: сведения не получены. Отсутствие сведений не означает отсутствие отказов.</p>
+      </div></div>
+      {% endif %}
       <div class="card"><div class="card-body">
         <h2 class="h6">Risk Score по проверкам</h2>
         <div class="chart-box"><canvas id="risk-chart" aria-label="График Risk Score по датам проверок"></canvas></div>

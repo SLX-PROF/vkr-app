@@ -11,6 +11,8 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
+from .observations import source_evidence, source_observations
+
 
 def build_report(session, *, show_details: bool) -> bytes:
     """Детальные факторы включаются только при наличии права доступа у получателя."""
@@ -46,6 +48,15 @@ def build_report(session, *, show_details: bool) -> bytes:
     if any(s.mode == "unknown" for s in sources) or not sources:
         story.append(p("Режим источников для части данных не сохранён. Происхождение результата требует уточнения."))
     if show_details:
+        story.append(p("Результаты по источникам", heading))
+        for row in source_observations(sources):
+            story.append(p(f"{row['title']}: {row['text']}. {row['details']}"))
+        for block in source_evidence(sources):
+            story.append(p(f"{block['title']}: показано {len(block['rows'])} из {block['total']} записей", heading))
+            for row in block["rows"]:
+                story.append(p(f"{row['title']}. {row['text']}"))
+        story.append(p("Индекс риска системы не является оценкой ЗСК. Категория ЗСК и банковские отказы "
+                       "764/639/550 в этом сеансе не установлены."))
         story.append(p("Выявленные факторы", heading))
         for factor in session.factors:
             story.append(p(f"+{factor['points']} — {factor['text']} (источник: {factor.get('source') or 'не указан'})"))

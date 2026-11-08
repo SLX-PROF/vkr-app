@@ -45,6 +45,7 @@ def throttle(domain: str) -> None:
 
 
 class BaseSource:
+    cache_version = 1
     name = ""  # человекочитаемое имя («ЕГРЮЛ»), хранится в SourceData.source_name
     key = ""  # ключ настройки SOURCE_MODE_<KEY> и имя каталога фикстур в нижнем регистре
     domain = ""
@@ -60,7 +61,7 @@ class BaseSource:
     def fetch(self, query: str) -> SourceResult:
         """query — ИНН. Режим берётся из настройки SOURCE_MODES[key]."""
         mode = self.mode
-        cache_key = f"source:{self.key}:{mode}:{query}"
+        cache_key = f"source:{self.key}:v{self.cache_version}:{mode}:{query}"
         if mode != "mock":
             cached = cache.get(cache_key)
             if cached:
