@@ -11,7 +11,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from .observations import source_evidence, source_observations
+from .observations import counterparty_requests, source_evidence, source_observations
 
 
 def build_report(session, *, show_details: bool) -> bytes:
@@ -62,6 +62,10 @@ def build_report(session, *, show_details: bool) -> bytes:
             story.append(p(f"+{factor['points']} — {factor['text']} (источник: {factor.get('source') or 'не указан'})"))
         if not session.factors:
             story.append(p("По полученным данным правила риска не сработали."))
+        story.append(p("Что запросить у контрагента", heading))
+        for row in counterparty_requests(sources):
+            story.append(p(f"{row['title']}: {row['text']}"))
+        story.append(p("Полученные документы проверяет сотрудник. Сам запрос не изменяет оценку риска."))
     else:
         story.append(p("Детальные факторы доступны сотрудникам СБ, юристам и администратору."))
     story.append(p("Использованные источники", heading))

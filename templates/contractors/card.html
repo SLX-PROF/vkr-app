@@ -100,6 +100,12 @@
         <a href="https://www.cbr.ru/counteraction_m_ter/platform_zsk/proverka-po-inn/" target="_blank" rel="noopener noreferrer">Проверить высокий риск ЗСК на сайте ЦБ</a>
         <p class="small text-muted mt-2 mb-0">Банковские отказы по спискам 764/639/550: сведения не получены. Отсутствие сведений не означает отсутствие отказов.</p>
       </div></div>
+      <div class="card mb-3"><div class="card-body">
+        <h2 class="h6">Что запросить у контрагента</h2>
+        <p class="small text-muted">Документы дополняют сведения открытых источников. После получения сотрудник проверяет их содержание и актуальность; сам запрос оценку риска не меняет.</p>
+        <dl>{% for row in counterparty_requests %}<dt>{{ row.title }}</dt><dd>{{ row.text }}</dd>{% endfor %}</dl>
+        <a class="btn btn-outline-primary" href="{% url 'counterparty_request' contractor.pk %}">Скачать запрос документов</a>
+      </div></div>
       {% endif %}
       <div class="card"><div class="card-body">
         <h2 class="h6">Risk Score по проверкам</h2>

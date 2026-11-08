@@ -52,6 +52,31 @@ def card_pk():
     return run_check(DIRECTOR_MASS).contractor.pk
 
 
+def test_counterparty_request_available_to_security_without_changing_score(security, card_pk):
+    before = list(CheckSession.objects.values('pk', 'score', 'status', 'is_partial'))
+    response = security.get(reverse('counterparty_request', args=[card_pk]))
+    assert response.status_code == 200
+    text = response.content.decode('utf-8-sig')
+    assert 'ДЕМОНСТРАЦИОННЫЙ ПРИМЕР' in text and DIRECTOR_MASS in text
+    assert 'МЧД' in text and 'уведомления банка' in text
+    assert response['Cache-Control'] == 'private, no-store'
+    assert list(CheckSession.objects.values('pk', 'score', 'status', 'is_partial')) == before
+
+
+def test_counterparty_request_honors_detail_permissions(accountant, card_pk):
+    assert accountant.get(reverse('counterparty_request', args=[card_pk])).status_code == 403
+    html = accountant.get(reverse('contractor_card', args=[card_pk])).content.decode()
+    assert 'Скачать запрос документов' not in html
+
+
+def test_counterparty_request_includes_ambiguous_enforcements(security, card_pk):
+    session = CheckSession.objects.filter(contractor_id=card_pk).latest('started_at')
+    SourceData.objects.filter(session=session, source_name='ФССП').update(
+        data={'active_proceedings': None, 'candidate_records': [{'ИспПрНомер': 'DEMO'}]})
+    response = security.get(reverse('counterparty_request', args=[card_pk]))
+    assert 'принадлежности организации' in response.content.decode()
+
+
 # --- вход ---------------------------------------------------------------------------------------
 
 def test_groups_created_by_migration():

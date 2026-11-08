@@ -3,15 +3,16 @@ from datetime import timedelta
 
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.core.ratelimit import rate_limit
-from apps.core.roles import ALL_ROLES, can_see_details, role_required
+from apps.core.roles import ADMIN, ALL_ROLES, SECURITY, can_see_details, role_required
 from apps.core.validators import is_valid_inn, is_valid_ogrn
 from apps.documents.models import DocumentVerification
-from apps.reports.observations import source_evidence, source_observations
+from apps.reports.observations import counterparty_requests, source_evidence, source_observations
 from apps.scrapers.egrul import EgrulSource
 from apps.scrapers.sources import ALL_SOURCES
 
@@ -86,6 +87,7 @@ def contractor_card(request, pk):
         "factors": factors,
         "observations": source_observations(list(latest.sources.all())) if latest and details else [],
         "evidence": source_evidence(list(latest.sources.all())) if latest and details else [],
+        "counterparty_requests": counterparty_requests(latest.sources.all()) if latest and details else [],
         "source_statuses": [{"name": s.source_name, "status": s.get_status_display(),
                              "mode": s.mode, "partial": bool(s.data.get("unavailable_fields")),
                              "error": s.error, "url": SOURCE_URLS.get(s.source_name, "")}
@@ -94,3 +96,24 @@ def contractor_card(request, pk):
         .select_related("document").order_by("-verified_at"),
     }
     return render(request, "contractors/card.html", context)
+
+
+@role_required(SECURITY, ADMIN)
+def counterparty_request(request, pk):
+    contractor = get_object_or_404(Contractor, pk=pk)
+    latest = contractor.checks.order_by("-started_at", "-pk").first()
+    rows = counterparty_requests(latest.sources.all() if latest else [])
+    lines = ["Запрос документов и пояснений", contractor.short_name or contractor.full_name or "Контрагент",
+             f"ИНН: {contractor.inn}", f"Дата формирования: {timezone.localdate():%d.%m.%Y}"]
+    if latest:
+        lines.append(f"Основание: проверка № {latest.pk} от {timezone.localtime(latest.started_at):%d.%m.%Y %H:%M}")
+        if latest.is_demo:
+            lines.append("ДЕМОНСТРАЦИОННЫЙ ПРИМЕР. Не предназначен для направления реальной организации.")
+    lines += ["", "Просим предоставить следующие документы и пояснения:", ""]
+    for index, row in enumerate(rows, 1):
+        lines += [f"{index}. {row['title']}", row["text"], ""]
+    response = HttpResponse("\ufeff" + "\n".join(lines), content_type="text/plain; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="request-{contractor.inn}.txt"'
+    response["Cache-Control"] = "private, no-store"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
