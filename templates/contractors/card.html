@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% load static ui %}
+{% block title %}{{ contractor.short_name|default:contractor.inn }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <h1 class="h3 mb-1">{{ contractor.short_name|default:contractor.full_name|default:"Контрагент без названия" }}</h1>
+    <div class="text-muted">ИНН {{ contractor.inn }}{% if contractor.ogrn %} · ОГРН {{ contractor.ogrn }}{% endif %}</div>
+    <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
+      {% if latest %}{{ latest.status|status_badge }}{% endif %}
+      {{ contractor.status|contractor_badge }}
+      {% if contractor.is_construction %}
+        <span class="badge text-bg-light border" title="Раздел F ОКВЭД: строительство. Информационная пометка, в баллы не входит">Строительная отрасль</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+  {% if latest %}<a class="btn btn-outline-secondary" href="{% url 'reports:contractor_pdf' latest.pk %}">Скачать PDF</a>{% endif %}
+  <form method="post" action="{% url 'check' %}">
+    {% csrf_token %}
+    <input type="hidden" name="query" value="{{ contractor.inn }}">
+    <input type="hidden" name="profile" value="{% if latest.is_demo %}demo{% else %}live{% endif %}">
+    <button class="btn btn-outline-primary" type="submit">Проверить заново</button>
+  </form>
+  </div>
+</div>
+{% if latest.is_demo %}<div class="alert alert-info">Демонстрационные данные. Результат не является проверкой реальной организации.</div>{% endif %}
+
+<ul class="nav nav-tabs mb-3" role="tablist">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-overview" type="button" role="tab">Обзор</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-egrul" type="button" role="tab">ЕГРЮЛ</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-risks" type="button" role="tab">Риски</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-docs" type="button" role="tab">Документы</button></li>
+</ul>
+
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="tab-overview" role="tabpanel">
+    {% if latest.is_demo %}<p class="text-muted small">История в учебном примере синтетическая; она не отражает изменение реальной компании.</p>{% endif %}
+    {% if check_history %}
+    <details class="mb-3"><summary>История проверок и отчёты</summary>
+      <div class="table-responsive"><table class="table table-sm mt-2">
+        <thead><tr><th>Дата</th><th>Статус</th><th>Балл</th><th>Отчёт</th></tr></thead>
+        <tbody>{% for check in check_history %}<tr><td>{{ check.started_at|date:"d.m.Y H:i" }}{% if check.is_demo %} (демо){% endif %}</td><td>{{ check.status|status_badge }}{% if check.is_partial %} · частичная{% endif %}</td><td>{{ check.score }}</td><td><a href="{% url 'reports:contractor_pdf' check.pk %}">PDF</a></td></tr>{% endfor %}</tbody>
+      </table></div>
+    </details>
+    {% endif %}
+    {% if latest %}
+      <div class="card mb-3"><div class="card-body">
+        <div class="d-flex flex-wrap gap-4 align-items-center">
+          <div><div class="text-muted small">Итоговый балл</div><div class="display-6">{{ latest.score }}<span class="fs-6 text-muted"> / 100</span></div></div>
+          <div><div class="text-muted small">Статус</div>{{ latest.status|status_badge }}</div>
+          <div><div class="text-muted small">Проверка от</div>{{ latest.started_at|date:"d.m.Y H:i" }}</div>
+        </div>
+        {% if latest.is_partial %}
+          <div class="alert alert-secondary mt-3 mb-0">
+            <strong>Частичная проверка.</strong>
+            {% for name in missing_sources %}Неполные или недоступные сведения: {{ name }}. {% endfor %}
+            {% if latest.status == 'unknown' %}Недостаточно данных для оценки надёжности. Низкий балл не означает отсутствие риска.{% endif %}
+          </div>
+        {% endif %}
+        <p class="mt-3 mb-0">
+          {% if can_see_details %}
+            {% if factors %}Сработавшие правила ({{ factors|length }}) — на вкладке «Риски».{% elif latest.status == 'unknown' %}Сначала необходимо получить сведения из недоступных источников.{% else %}По полученным данным правила риска не сработали.{% endif %}
+          {% else %}
+            Подробные факторы риска доступны сотрудникам СБ и юристам.
+          {% endif %}
+        </p>
+      </div></div>
+      <div class="card mb-3"><div class="card-body">
+        <h2 class="h6">Доступность источников</h2>
+        <div class="table-responsive"><table class="table table-sm mb-0">
+          <thead><tr><th>Источник</th><th>Результат получения сведений</th></tr></thead>
+          <tbody>{% for source in source_statuses %}<tr>
+            <td><a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.name }}</a>{% if source.mode == 'mock' %} (демо){% endif %}</td>
+            <td>{{ source.status }}{% if source.partial %} · получены не все показатели{% endif %}{% if source.error %}<div class="small text-muted">{{ source.error }}</div>{% endif %}</td>
+          </tr>{% endfor %}</tbody>
+        </table></div>
+        <p class="small text-muted mt-2 mb-0">Ссылка открывает первоисточник для ручной проверки. Отсутствие ответа не подтверждает отсутствие риска.</p>
+      </div></div>
+      <div class="card"><div class="card-body">
+        <h2 class="h6">Risk Score по проверкам</h2>
+        <div class="chart-box"><canvas id="risk-chart" aria-label="График Risk Score по датам проверок"></canvas></div>
+        {{ chart|json_script:"chart-data" }}
+      </div></div>
+    {% else %}
+      <div class="alert alert-secondary">Проверок этого контрагента ещё не было.</div>
+    {% endif %}
+  </div>
+
+  <div class="tab-pane fade" id="tab-egrul" role="tabpanel">
+    <div class="card"><div class="card-body">
+      {% if contractor.egrul_updated_at %}
+      <dl class="row mb-0">
+        <dt class="col-sm-4">Полное наименование</dt><dd class="col-sm-8">{{ contractor.full_name|default:"—" }}</dd>
+        <dt class="col-sm-4">Руководитель</dt><dd class="col-sm-8">{{ contractor.director_name|default:"—" }}{% if contractor.director_position %}, {{ contractor.director_position }}{% endif %}</dd>
+        <dt class="col-sm-4">Адрес</dt><dd class="col-sm-8">{{ contractor.address|default:"—" }}</dd>
+        <dt class="col-sm-4">Дата регистрации</dt><dd class="col-sm-8">{{ contractor.registration_date|date:"d.m.Y"|default:"—" }}</dd>
+        <dt class="col-sm-4">Основной ОКВЭД</dt><dd class="col-sm-8">{{ contractor.okved|default:"—" }}{% if contractor.is_construction %} (строительство){% endif %}</dd>
+        <dt class="col-sm-4">Статус</dt><dd class="col-sm-8">{{ contractor.status|contractor_badge }}</dd>
+        <dt class="col-sm-4">Данные обновлены</dt><dd class="col-sm-8">{{ contractor.egrul_updated_at|date:"d.m.Y H:i" }}</dd>
+      </dl>
+      {% else %}
+        <p class="text-muted mb-0">Сведения ЕГРЮЛ по этому контрагенту получить не удалось.</p>
+      {% endif %}
+    </div></div>
+  </div>
+
+  <div class="tab-pane fade" id="tab-risks" role="tabpanel">
+    {% if not can_see_details %}
+      <div class="alert alert-secondary">Детальные факторы риска доступны сотрудникам СБ и юристов.</div>
+    {% elif not latest %}
+      <div class="alert alert-secondary">Проверок ещё не было.</div>
+    {% elif not factors %}
+      <div class="alert alert-secondary">По полученным сведениям правила риска не сработали.{% if latest.is_partial %} Проверка неполная: необходимо проверить недоступные сведения в первоисточниках.{% endif %}</div>
+    {% else %}
+      <ul class="list-group">
+        {% for f in factors %}
+          <li class="list-group-item d-flex gap-3 align-items-start">
+            <span class="factor-points text-danger">+{{ f.points }}</span>
+            <div>{{ f.text }}<div class="small text-muted">Источник: {% if f.url %}<a href="{{ f.url }}" target="_blank" rel="noopener noreferrer">{{ f.source }}</a>{% else %}{{ f.source }}{% endif %}</div></div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+
+  <div class="tab-pane fade" id="tab-docs" role="tabpanel">
+    <div class="card"><table class="table mb-0 align-middle">
+      <thead><tr><th>Документ</th><th>Подписант</th><th>Результат сверки</th></tr></thead>
+      <tbody>
+      {% for v in verifications %}
+        <tr>
+          <td><a href="{% url 'documents:result' v.document.pk %}">{{ v.document }}</a></td>
+          <td>{{ v.document.signer_name|default:"—" }}</td>
+          <td>{{ v.verdict|verdict_badge }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="3" class="text-muted text-center py-4">Документов этого контрагента ещё не проверяли.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    <a class="btn btn-outline-primary mt-3" href="{% url 'documents:verify' %}">Проверить документ</a>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'vendor/chartjs/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/risk_chart.js' %}"></script>
+{% endblock %}

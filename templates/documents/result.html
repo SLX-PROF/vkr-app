@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Результат сверки{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">{{ document }}</h1>
+<p class="text-muted">ИНН {{ document.inn }}{% if verification.contractor.short_name %} · {{ verification.contractor.short_name }}{% endif %}
+  · подписант: {{ document.signer_name|default:"—" }}</p>
+
+{% if verification.verdict == "ok" %}
+  <div class="alert alert-success fs-5">✓ Соответствует проверенным реквизитам</div>
+{% elif verification.verdict == "warning" %}
+  <div class="alert alert-warning fs-5">Требует внимания: есть предупреждения</div>
+{% else %}
+  <div class="alert alert-danger fs-5">Есть расхождения</div>
+{% endif %}
+
+<ul class="list-group mb-4">
+  {% for item in verification.issues %}
+    <li class="list-group-item">
+      {{ item.severity|severity_badge }}
+      {{ item.text }}
+    </li>
+  {% endfor %}
+</ul>
+<a class="btn btn-outline-primary" href="{% url 'documents:verify' %}">Проверить другой документ</a>
+{% if verification.contractor %}
+  <a class="btn btn-link" href="{% url 'contractor_card' verification.contractor.pk %}">Карточка контрагента</a>
+{% endif %}
+{% endblock %}

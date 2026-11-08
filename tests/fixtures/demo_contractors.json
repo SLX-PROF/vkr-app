@@ -1,0 +1,50 @@
+[
+  {
+    "inn": "0000000018",
+    "name": "ООО «Тестстрой-1»",
+    "scenario": "Чистая компания",
+    "expected_status": "safe"
+  },
+  {
+    "inn": "0000000025",
+    "name": "ООО «Тестстрой-2»",
+    "scenario": "Ликвидированная компания",
+    "expected_status": "dangerous"
+  },
+  {
+    "inn": "0000000032",
+    "name": "ООО «Тестстрой-3»",
+    "scenario": "Банкрот",
+    "expected_status": "dangerous"
+  },
+  {
+    "inn": "0000000040",
+    "name": "ООО «Тестстрой-4»",
+    "scenario": "Дисквалифицированный директор",
+    "expected_status": "risky"
+  },
+  {
+    "inn": "0000000057",
+    "name": "ООО «Тестстрой-5»",
+    "scenario": "Массовый адрес и руководитель",
+    "expected_status": "risky"
+  },
+  {
+    "inn": "0000000064",
+    "name": "ООО «Тестстрой-6»",
+    "scenario": "Много долгов ФССП",
+    "expected_status": "risky"
+  },
+  {
+    "inn": "0000000071",
+    "name": "ООО «Тестстрой-7»",
+    "scenario": "Много арбитражных дел",
+    "expected_status": "risky"
+  },
+  {
+    "inn": "0000000089",
+    "name": "ООО «Тестстрой-8»",
+    "scenario": "Фирма-«однодневка»",
+    "expected_status": "risky"
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "scenario": "login → INN → card → PDF → document",
+  "passed": true,
+  "mobile_width": 390,
+  "page_errors": []
+}

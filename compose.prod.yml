@@ -1,0 +1,71 @@
+name: vkr
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?}
+      POSTGRES_USER: ${POSTGRES_ADMIN_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?}
+      APP_DB_USER: ${APP_DB_USER:?}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./deploy/init-db.sh:/docker-entrypoint-initdb.d/10-app-user.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  web:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8765:8000"
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:?}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:?}
+      POSTGRES_USER: ${APP_DB_USER:?}
+      POSTGRES_PASSWORD: ${APP_DB_PASSWORD:?}
+      SOURCE_MODE_EGRUL: web
+      SOURCE_MODE_TRANSPARENT: web
+      SOURCE_MODE_DISQUALIFIED: web
+      SOURCE_MODE_FSSP: web
+      SOURCE_MODE_EFRSB: web
+      SOURCE_MODE_KAD: web
+    volumes:
+      - logs:/app/logs
+      - media:/app/media
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; r=urllib.request.Request('http://127.0.0.1:8000/health/', headers={'X-Forwarded-Proto':'https'}); urllib.request.urlopen(r,timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  backup:
+    image: postgres:16
+    restart: unless-stopped
+    user: "${BACKUP_UID:-1000}:${BACKUP_GID:-1000}"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGDATABASE: ${POSTGRES_DB:?}
+      PGUSER: ${POSTGRES_ADMIN_USER:?}
+      PGPASSWORD: ${POSTGRES_ADMIN_PASSWORD:?}
+    volumes:
+      - ./backups:/backups
+      - ./deploy/backup-loop.sh:/backup-loop.sh:ro
+    entrypoint: ["sh", "/backup-loop.sh"]
+volumes:
+  pgdata:
+  logs:
+  media:

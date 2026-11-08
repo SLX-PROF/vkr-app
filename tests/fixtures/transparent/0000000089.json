@@ -1,0 +1,10 @@
+{
+  "director_companies_count": 8,
+  "address_companies_count": 1,
+  "avg_headcount": 1,
+  "revenue": 52000000,
+  "taxes_paid": 90000,
+  "tax_regime": "УСН",
+  "has_tax_debt": true,
+  "tax_debt_amount": 480000
+}
