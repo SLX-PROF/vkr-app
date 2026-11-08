@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Подтверждение реквизитов{% endblock %}
+{% block content %}
+<h1 class="h3">Проверьте реквизиты документа</h1>
+<p class="small text-muted">Подтвердите реквизиты в течение часа. После этого предварительная загрузка станет недоступна и будет удалена при очистке.</p>
+<p>{{ upload.original_name }} · страниц: {{ upload.extraction.pages }} · способ: {{ upload.extraction.method }}</p>
+<div class="alert alert-warning">{% for note in upload.extraction.notes %}<p class="mb-1">{{ note }}</p>{% endfor %}</div>
+{% if upload.extraction.inn_candidates %}<p>Найденные ИНН: {% for inn in upload.extraction.inn_candidates %}<strong>{{ inn }}</strong>{% if not forloop.last %}, {% endif %}{% endfor %}. Укажите ИНН проверяемого контрагента.</p>{% endif %}
+<details class="mb-3"><summary>Распознанный текст</summary><pre class="text-wrap border p-3 mt-2">{{ upload.extraction.text }}</pre></details>
+<form method="post" class="card card-body">{% csrf_token %}
+ {% for field in form %}<div class="mb-3">
+  <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+  {% for error in field.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+ </div>{% endfor %}
+ <button type="submit" class="btn btn-primary">Подтвердить и сверить</button>
+</form>
+{% endblock %}

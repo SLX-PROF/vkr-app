@@ -1,0 +1,70 @@
+.............................................
+run_check, mock, 8 ��������: max=0.016 �, mean=0.010 �, total=0.078 �
+........................... [ 24%]
+........................................................................ [ 48%]
+........................................................................ [ 72%]
+........................................................................ [ 96%]
+..........                                                               [100%]
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.12.14-final-0 _______________
+
+Name                                                        Stmts   Miss  Cover
+-------------------------------------------------------------------------------
+apps\__init__.py                                                0      0   100%
+apps\contractors\__init__.py                                    0      0   100%
+apps\contractors\admin.py                                      23      0   100%
+apps\contractors\apps.py                                        5      0   100%
+apps\contractors\management\__init__.py                         0      0   100%
+apps\contractors\management\commands\__init__.py                0      0   100%
+apps\contractors\management\commands\seed_demo.py              61      0   100%
+apps\contractors\migrations\0001_initial.py                     8      0   100%
+apps\contractors\migrations\0002_liquidating_factors.py         4      0   100%
+apps\contractors\migrations\0003_okved.py                       4      0   100%
+apps\contractors\migrations\0004_report_provenance.py           4      0   100%
+apps\contractors\migrations\0005_integrity_constraints.py       6      0   100%
+apps\contractors\migrations\0006_incomplete_verdict.py          4      0   100%
+apps\contractors\migrations\0007_reclassify_incomplete.py       7      0   100%
+apps\contractors\migrations\__init__.py                         0      0   100%
+apps\contractors\models.py                                     71      2    97%
+apps\contractors\services.py                                   64      4    94%
+apps\contractors\urls.py                                        3      0   100%
+apps\contractors\views.py                                      65      6    91%
+apps\core\__init__.py                                           0      0   100%
+apps\core\admin_mixins.py                                      22     10    55%
+apps\core\apps.py                                               5      0   100%
+apps\core\context.py                                            5      0   100%
+apps\core\migrations\0001_roles.py                              9      0   100%
+apps\core\migrations\__init__.py                                0      0   100%
+apps\core\ratelimit.py                                         17      0   100%
+apps\core\roles.py                                             23      0   100%
+apps\core\templatetags\__init__.py                              0      0   100%
+apps\core\templatetags\ui.py                                   22      0   100%
+apps\core\validators.py                                        28      0   100%
+apps\core\views.py                                             11      0   100%
+apps\documents\__init__.py                                      0      0   100%
+apps\documents\admin.py                                        13      0   100%
+apps\documents\apps.py                                          5      0   100%
+apps\documents\forms.py                                        17      0   100%
+apps\documents\migrations\0001_initial.py                       7      0   100%
+apps\documents\migrations\__init__.py                           0      0   100%
+apps\documents\models.py                                       46      0   100%
+apps\documents\urls.py                                          4      0   100%
+apps\documents\verification.py                                 96      0   100%
+apps\documents\views.py                                        19      0   100%
+apps\reports\__init__.py                                        0      0   100%
+apps\reports\apps.py                                            5      0   100%
+apps\reports\pdf.py                                            70      1    99%
+apps\reports\scoring.py                                        84      0   100%
+apps\reports\urls.py                                            4      0   100%
+apps\reports\views.py                                          18      0   100%
+apps\scrapers\__init__.py                                       0      0   100%
+apps\scrapers\apps.py                                           5      0   100%
+apps\scrapers\base.py                                          82      3    96%
+apps\scrapers\disqualified.py                                  53     16    70%
+apps\scrapers\egrul.py                                         48      4    92%
+apps\scrapers\sources.py                                       17      0   100%
+apps\scrapers\transparent.py                                   78      9    88%
+-------------------------------------------------------------------------------
+TOTAL                                                        1142     55    95%
+Coverage JSON written to file docs/coverage-live.json
+298 passed in 41.34s
