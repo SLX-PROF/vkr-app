@@ -1,0 +1,16 @@
+# PostgreSQL для локальной разработки: docker compose up -d db
+services:
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-valdex_check}
+      POSTGRES_USER: ${POSTGRES_USER:-valdex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-valdex}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

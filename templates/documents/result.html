@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Результат сверки{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">{{ document }}</h1>
+{% if document.file %}
+<p><a href="{% url 'documents:file' document.pk %}">Скачать исходный документ</a></p>
+<p class="small text-muted">Извлечение: {{ document.processing.method }}. Реквизиты подтверждены {{ document.processing.confirmed_at }}.
+ SHA-256: <span class="text-break">{{ document.processing.sha256 }}</span></p>
+<p class="small text-muted">Извлечение текста и сверка реквизитов не устанавливают действительность электронной подписи.</p>
+<details class="card card-body mb-3"><summary>Проверка электронной подписи</summary>
+ <p class="mt-2">Соответствие подписи документу, доверие к сертификату и проверка отзыва показываются отдельно.</p>
+ <form method="post" enctype="multipart/form-data" action="{% url 'documents:signature' document.pk %}">
+  {% csrf_token %}{{ signature_form.as_p }}
+  <button class="btn btn-outline-primary" type="submit">Проверить отдельную подпись</button>
+ </form>
+ <form class="mt-2" method="post" action="{% url 'documents:signature' document.pk %}">{% csrf_token %}
+  <input type="hidden" name="kind" value="embedded">
+  <button class="btn btn-outline-primary" type="submit">Проверить подписи внутри PDF</button>
+ </form>
+ {% for check in document.processing.signature_checks %}
+ <div class="border-top mt-3 pt-2"><p class="small text-muted">{{ check.checked_at }}</p>
+ {% for result in check.results %}
+  <p>{{ result.message }}</p>
+  {% for identity in result.identities %}<p>Владелец сертификата: {{ identity.name|default:identity.common_name }}.
+   {% if identity.organization_inn %}ИНН организации: {{ identity.organization_inn }}.{% endif %}</p>{% endfor %}
+  <p>Доверие к сертификату: {% if result.trust == 'verified' %}подтверждено{% elif result.trust == 'failed' %}проверка не пройдена{% else %}не установлено{% endif %}.
+  Отзыв: {% if result.revocation == 'verified' %}проверен{% elif result.revocation == 'revoked' %}сертификат отозван{% else %}не проверен{% endif %}.</p>
+  {% if result.certificate %}<details><summary>Сведения сертификата</summary><pre class="text-wrap">{{ result.certificate }}</pre></details>{% endif %}
+ {% endfor %}</div>
+ {% endfor %}
+</details>
+{% endif %}
+<p class="text-muted">ИНН {{ document.inn }}{% if verification.contractor.short_name %} · {{ verification.contractor.short_name }}{% endif %}
+  · подписант: {{ document.signer_name|default:"—" }}</p>
+
+{% if verification.verdict == "ok" %}
+  <div class="alert alert-success fs-5">✓ Соответствует проверенным реквизитам</div>
+{% elif verification.verdict == "warning" %}
+  <div class="alert alert-warning fs-5">Требует внимания: есть предупреждения</div>
+{% else %}
+  <div class="alert alert-danger fs-5">Есть расхождения</div>
+{% endif %}
+
+<ul class="list-group mb-4">
+  {% for item in verification.issues %}
+    <li class="list-group-item">
+      {{ item.severity|severity_badge }}
+      {{ item.text }}
+    </li>
+  {% endfor %}
+</ul>
+<a class="btn btn-outline-primary" href="{% url 'documents:verify' %}">Проверить другой документ</a>
+{% if verification.contractor %}
+  <a class="btn btn-link" href="{% url 'contractor_card' verification.contractor.pk %}">Карточка контрагента</a>
+{% endif %}
+{% endblock %}

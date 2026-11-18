@@ -1,0 +1,25 @@
+@startuml
+left to right direction
+actor Бухгалтерия as A
+actor "СБ / юристы" as S
+actor Администратор as M
+rectangle "Система проверки" {
+usecase "Проверить контрагента" as C
+usecase "Сверить документ" as D
+usecase "История и PDF" as P
+usecase "Факторы риска" as F
+usecase "Записи и пользователи" as U
+}
+A -- C
+A -- D
+A -- P
+S -- C
+S -- D
+S -- P
+S -- F
+M -- C
+M -- D
+M -- P
+M -- F
+M -- U
+@enduml

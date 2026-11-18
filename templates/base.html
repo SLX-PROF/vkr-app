@@ -1,0 +1,40 @@
+{% load static %}<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Проверка контрагентов{% endblock %} · Валдэкс</title>
+  <link href="{% static 'vendor/bootstrap/bootstrap.min.css' %}" rel="stylesheet">
+  <link href="{% static 'css/app.css' %}" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-md navbar-dark bg-dark">
+  <div class="container" style="max-width: 1000px">
+    <a class="navbar-brand" href="{% url 'dashboard' %}">Проверка контрагентов</a>
+    {% if user.is_authenticated %}
+    <div class="navbar-nav me-auto">
+      {% if has_role_any %}
+        <a class="nav-link" href="{% url 'dashboard' %}">Главная</a>
+        <a class="nav-link" href="{% url 'documents:verify' %}">Проверка документа</a>
+      {% endif %}
+      {% if user.is_staff %}<a class="nav-link" href="{% url 'admin:index' %}">Админка</a>{% endif %}
+    </div>
+    <form method="post" action="{% url 'logout' %}" class="d-flex align-items-center gap-2">
+      {% csrf_token %}
+      <span class="navbar-text small">{{ user.get_username }}</span>
+      <button class="btn btn-sm btn-outline-light" type="submit">Выйти</button>
+    </form>
+    {% endif %}
+  </div>
+</nav>
+<main class="container py-4" style="max-width: 1000px">
+  <div class="alert alert-secondary small">Учебная версия. Демонстрационные записи помечены отдельно. Выводы зависят от полноты полученных сведений.</div>
+  {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">{{ message }}</div>
+  {% endfor %}
+  {% block content %}{% endblock %}
+</main>
+<script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

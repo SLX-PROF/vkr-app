@@ -1,0 +1,18 @@
+@startuml
+actor Пользователь as U
+participant View as V
+participant run_check as C
+participant Провайдеры as S
+database PostgreSQL as DB
+U -> V: POST /check
+V -> C: run_check(inn, user)
+C -> S: fetch_all (параллельно)
+S --> C: SourceResult для каждого источника
+C -> C: calculate_risk_score
+group transaction.atomic
+C -> DB: карточка, сеанс, ответы
+DB --> C: сохранение
+end
+C --> V: сеанс
+V --> U: карточка
+@enduml

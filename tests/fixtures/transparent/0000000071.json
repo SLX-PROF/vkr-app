@@ -1,0 +1,13 @@
+{
+  "director_companies_count": 1,
+  "address_companies_count": 1,
+  "avg_headcount": 25,
+  "revenue": 40000000,
+  "taxes_paid": 3000000,
+  "tax_regime": "ОСНО",
+  "has_tax_debt": false,
+  "tax_debt_amount": 0,
+  "unreliable_details": false,
+  "unreliable_address": false,
+  "unreliable_director": false
+}

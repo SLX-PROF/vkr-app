@@ -1,0 +1,4 @@
+body { background: #f5f6f8; }
+.stat-card .display-6 { font-weight: 600; }
+.chart-box { position: relative; height: 280px; }
+.factor-points { min-width: 3.5rem; text-align: right; font-weight: 600; }

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Загрузка документа{% endblock %}
+{% block content %}
+<h1 class="h3">Загрузить PDF или скан</h1>
+<p>PDF с текстом обрабатывается напрямую, скан распознаётся на сервере. После загрузки проверьте реквизиты.</p>
+<p class="text-muted">До 6 МБ, до 20 страниц PDF. За одну загрузку распознаются до трёх страниц сканов.</p>
+<p class="small text-muted">Неподтверждённые загрузки доступны в течение часа. Подтверждённый оригинал сохраняется вместе с результатом.</p>
+<form method="post" enctype="multipart/form-data" class="card card-body">
+ {% csrf_token %}{{ form.as_p }}
+ <button type="submit" class="btn btn-primary">Извлечь реквизиты</button>
+</form>
+<a class="btn btn-link mt-2" href="{% url 'documents:verify' %}">Ввести реквизиты вручную</a>
+{% endblock %}
